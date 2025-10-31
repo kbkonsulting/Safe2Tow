@@ -1,0 +1,5 @@
+{
+  "name": "TowSafe AWD Checker",
+  "description": "An expert AI co-pilot for tow operators. This app provides instant, professional-grade towing procedures by synthesizing manufacturer data with field-tested knowledge. It features distinct, expert-level logic for FWD, RWD, AWD/4WD, and modern EV/Hybrid drivetrains, ensuring safe and accurate guidance.",
+  "requestFramePermissions": []
+}
