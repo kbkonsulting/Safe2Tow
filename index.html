@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-M-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TowSafe AWD Checker</title>
+    <title>Safe2Tow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class', // Enable class-based dark mode
         theme: {
           extend: {
             colors: {
@@ -17,22 +18,48 @@
               'caution-yellow': '#F59E0B',
               'danger-red': '#EF4444',
             },
+            keyframes: {
+               bounce: {
+                '0%, 100%': {
+                  transform: 'translateY(0) rotate(-1deg)',
+                },
+                '50%': {
+                  transform: 'translateY(-5px) rotate(1deg)',
+                },
+              },
+              'fade-in': {
+                '0%': { opacity: '0', transform: 'scale(0.98)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              }
+            },
+            animation: {
+              'bounce-slow': 'bounce 1.5s infinite ease-in-out',
+              'fade-in': 'fade-in 0.3s ease-out forwards',
+            }
           },
         },
       }
     </script>
+    <style>
+      /* Keeping custom animation keyframes defined in style tag */
+    </style>
   <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+    "@stripe/stripe-js": "https://aistudiocdn.com/@stripe/stripe-js@^4.4.0",
+    "@stripe/react-stripe-js": "https://aistudiocdn.com/@stripe/react-stripe-js@^3.0.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
 </script>
 </head>
-  <body class="bg-gray-900 text-gray-100">
+  <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

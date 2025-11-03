@@ -21,7 +21,7 @@ export interface AWDVariantInfo {
   rearTowing: TowingMethod;
   cautions: string[];
   awdSystemType: string;
-  isAwdMechanicallyEngagedWhenOff: boolean;
+  isDrivetrainEngagedWhenOff: boolean;
   steeringLocksWhenOff: boolean;
 }
 
@@ -34,12 +34,19 @@ export interface TowingInfo {
   };
   drivetrain: string;
   awdSystemType: string;
-  isAwdMechanicallyEngagedWhenOff: boolean;
+  isDrivetrainEngagedWhenOff: boolean;
   steeringLocksWhenOff: boolean;
   towingSafetyLevel: TowingSafetyLevel;
   summary: string;
   frontTowing: TowingMethod;
   rearTowing: TowingMethod;
   cautions: string[];
+  anecdotalAdvice?: string[];
   awdVariantInfo?: AWDVariantInfo;
+}
+
+export interface VehicleIdentificationResult {
+  year: string;
+  make: string;
+  model: string;
 }
