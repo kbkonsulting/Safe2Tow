@@ -2,10 +2,34 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { TowingInfo, VehicleIdentificationResult } from '../types';
 
 // Centralized model name for consistency and easy updates.
-const TEXT_MODEL = 'gemini-2.5-flash';
+const TEXT_MODEL = 'gemini-1.5-flash';
 
-// Gemini API initialization
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Architectural Fix: Use Vite's `import.meta.env` for client-side environment variables.
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+// This flag allows the rest of the application to gracefully degrade
+// if the Gemini API key is not set.
+export const isGeminiConfigured = !!GEMINI_API_KEY;
+
+// Architectural Fix: Only initialize the AI service if the key is provided.
+// This prevents the application from crashing if the .env file is not set up.
+const ai = isGeminiConfigured ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+
+if (!isGeminiConfigured) {
+    // This warning is helpful for developers during setup.
+    console.warn(
+      "Gemini API key is not configured. Please ensure VITE_GEMINI_API_KEY " +
+      "is set in your .env file. AI-based features will be disabled."
+    );
+}
+
+// Helper function to ensure the AI service is available before use.
+const ensureAi = () => {
+    if (!ai) {
+        throw new Error("Gemini API is not configured. Please check your .env file.");
+    }
+    return ai;
+}
 
 const towingInfoSchema = {
   type: Type.OBJECT,
@@ -99,6 +123,7 @@ const getSystemInstruction = () => `You are an expert automotive technician and 
 
 
 export const getTowingInfo = async (query: string): Promise<TowingInfo> => {
+  const ai = ensureAi();
   try {
     const response = await ai.models.generateContent({
       model: TEXT_MODEL,
@@ -123,6 +148,7 @@ export const getTowingInfo = async (query: string): Promise<TowingInfo> => {
 };
 
 export const getVehicleOptions = async (query: string): Promise<string[]> => {
+    const ai = ensureAi();
     try {
         const response = await ai.models.generateContent({
             model: TEXT_MODEL,
@@ -144,6 +170,7 @@ export const getVehicleOptions = async (query: string): Promise<string[]> => {
 };
 
 export const getCorrectedMake = async (make: string): Promise<string> => {
+    const ai = ensureAi();
     try {
         const response = await ai.models.generateContent({
             model: TEXT_MODEL,
@@ -157,6 +184,7 @@ export const getCorrectedMake = async (make: string): Promise<string> => {
 };
 
 export const identifyVehicleFromImage = async (base64Image: string): Promise<VehicleIdentificationResult> => {
+    const ai = ensureAi();
     const imagePart = {
         inlineData: {
             mimeType: 'image/jpeg',
@@ -203,6 +231,7 @@ export const identifyVehicleFromImage = async (base64Image: string): Promise<Veh
 
 
 export const extractVinFromImage = async (base64Image: string): Promise<string> => {
+    const ai = ensureAi();
     const imagePart = {
         inlineData: {
             mimeType: 'image/jpeg',
