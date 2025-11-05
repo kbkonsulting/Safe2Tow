@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { signInWithEmail, signUpWithEmail } from '../services/authService';
+import { signInWithEmail, signUpWithEmail, User } from '../services/authService';
+import { createUserIfNotExist } from '../services/databaseService';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenTerms, onOpenPrivacy }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, onOpenTerms, onOpenPrivacy }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,10 +21,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenTerms, onO
 
   if (!isOpen) return null;
 
+  const handleAuthSuccess = async (user: User) => {
+    // This is the critical fix: ensure the user document exists before closing the modal.
+    await createUserIfNotExist(user.uid, user.email, user.displayName);
+    onSuccess();
+    onClose();
+  };
+
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasAgreed) {
-      setError("You must agree to the terms and privacy policy.");
+    if (isSignUp && !hasAgreed) {
+      setError("You must agree to the terms and privacy policy to sign up.");
       return;
     }
     
@@ -30,14 +39,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenTerms, onO
     setError(null);
 
     try {
+      let user: User | null = null;
       if (isSignUp) {
-        await signUpWithEmail(name, email, password);
+        user = await signUpWithEmail(name, email, password);
       } else {
-        await signInWithEmail(email, password);
+        user = await signInWithEmail(email, password);
       }
-      onClose();
+      
+      if (user) {
+        await handleAuthSuccess(user);
+      } else {
+        setError("Could not complete the action. Please try again.");
+      }
+
     } catch (err) {
-      // Fix: Use property checking for Firebase v8 error objects instead of `instanceof FirebaseError`
       const firebaseError = err as { code?: string; message: string };
       if (firebaseError.code) {
         switch (firebaseError.code) {
@@ -141,7 +156,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenTerms, onO
           <div className="pt-2">
             <button 
               type="submit"
-              disabled={isLoading || !hasAgreed}
+              disabled={isLoading || (isSignUp && !hasAgreed)}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 font-semibold text-gray-900 bg-brand-yellow rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -154,21 +169,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenTerms, onO
           </div>
         </form>
         
-        <div className="flex items-start space-x-2 mt-4">
-          <input 
-            type="checkbox" 
-            id="terms-agree" 
-            checked={hasAgreed} 
-            onChange={(e) => setHasAgreed(e.target.checked)} 
-            className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-yellow focus:ring-brand-yellow"
-          />
-          <label htmlFor="terms-agree" className="text-xs text-gray-500 dark:text-gray-400">
-            By continuing, you agree to the 
-            <button onClick={(e) => handleLinkClick(e, onOpenTerms)} className="underline hover:text-brand-yellow mx-1">Terms of Service</button> 
-            and 
-            <button onClick={(e) => handleLinkClick(e, onOpenPrivacy)} className="underline hover:text-brand-yellow ml-1">Privacy Policy</button>.
-          </label>
-        </div>
+        {isSignUp && (
+          <div className="flex items-start space-x-2 mt-4">
+            <input 
+              type="checkbox" 
+              id="terms-agree" 
+              checked={hasAgreed} 
+              onChange={(e) => setHasAgreed(e.target.checked)} 
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-yellow focus:ring-brand-yellow"
+            />
+            <label htmlFor="terms-agree" className="text-xs text-gray-500 dark:text-gray-400">
+              By continuing, you agree to the 
+              <button onClick={(e) => handleLinkClick(e, onOpenTerms)} className="underline hover:text-brand-yellow mx-1">Terms of Service</button> 
+              and 
+              <button onClick={(e) => handleLinkClick(e, onOpenPrivacy)} className="underline hover:text-brand-yellow ml-1">Privacy Policy</button>.
+            </label>
+          </div>
+        )}
 
         <div className="text-center mt-6">
             <button onClick={toggleForm} className="text-sm text-brand-yellow hover:underline">

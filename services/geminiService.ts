@@ -4,21 +4,17 @@ import { TowingInfo, VehicleIdentificationResult } from '../types';
 // Centralized model name for consistency and easy updates.
 const TEXT_MODEL = 'gemini-1.5-flash';
 
-// Architectural Fix: Use Vite's `import.meta.env` for client-side environment variables.
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+// Use the more explicit environment variable
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// This flag allows the rest of the application to gracefully degrade
-// if the Gemini API key is not set.
 export const isGeminiConfigured = !!GEMINI_API_KEY;
 
-// Architectural Fix: Only initialize the AI service if the key is provided.
-// This prevents the application from crashing if the .env file is not set up.
+// Gemini API initialization with the explicit API key
 const ai = isGeminiConfigured ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
 if (!isGeminiConfigured) {
-    // This warning is helpful for developers during setup.
     console.warn(
-      "Gemini API key is not configured. Please ensure VITE_GEMINI_API_KEY " +
+      "Gemini API key is not configured. Please ensure GEMINI_API_KEY " +
       "is set in your .env file. AI-based features will be disabled."
     );
 }

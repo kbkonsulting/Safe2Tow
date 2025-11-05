@@ -13,20 +13,24 @@ const checkAuth = () => {
   return auth;
 };
 
+// Architectural Fix: Set authentication persistence to ensure user session is saved.
+if (isFirebaseConfigured && auth) {
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .catch((error) => {
+      console.error("Error setting authentication persistence:", error);
+    });
+}
+
 export const signUpWithEmail = async (name: string, email: string, password: string): Promise<User | null> => {
+  const authInstance = checkAuth();
   try {
-      const authInstance = checkAuth();
-      // Fix: Use v8 namespaced auth API
       const userCredential = await authInstance.createUserWithEmailAndPassword(email, password);
-      if (!userCredential.user) {
-        return null;
+      if (userCredential.user) {
+        await userCredential.user.updateProfile({ displayName: name });
+        return userCredential.user;
       }
-      // Fix: Use v8 method on user object to update profile
-      await userCredential.user.updateProfile({ displayName: name });
-      // After a successful sign-up, ensure a user document exists in Firestore.
-      await createUserIfNotExist(userCredential.user.uid, userCredential.user.email, name);
-      return userCredential.user;
-  } catch (error) {
+      return null;
+  } catch (error)  {
       console.error("Error signing up with email and password:", error);
       // Re-throw the error to be handled by the component
       throw error;
@@ -36,7 +40,6 @@ export const signUpWithEmail = async (name: string, email: string, password: str
 export const signInWithEmail = async (email: string, password: string): Promise<User | null> => {
   try {
       const authInstance = checkAuth();
-      // Fix: Use v8 namespaced auth API
       const userCredential = await authInstance.signInWithEmailAndPassword(email, password);
       return userCredential.user;
   } catch (error) {
@@ -49,7 +52,6 @@ export const signInWithEmail = async (email: string, password: string): Promise<
 export const signOut = async (): Promise<void> => {
   try {
     const authInstance = checkAuth();
-    // Fix: Use v8 namespaced auth API
     await authInstance.signOut();
   } catch (error) {
     console.error("Error signing out:", error);
@@ -58,10 +60,8 @@ export const signOut = async (): Promise<void> => {
 
 export const onAuthChange = (callback: (user: User | null) => void) => {
   if (!isFirebaseConfigured || !auth) {
-    // If auth is not configured, immediately call back with null user and return a dummy unsubscribe function.
     callback(null);
     return () => {};
   }
-  // Fix: Use v8 namespaced auth API
   return auth.onAuthStateChanged(callback);
 };
