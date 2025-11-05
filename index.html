@@ -1,66 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-M-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Safe2Tow</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class', // Enable class-based dark mode
-        theme: {
-          extend: {
-            colors: {
-              'brand-blue': '#1E3A8A',
-              'brand-yellow': '#FBBF24',
-              'safe-green': '#10B981',
-              'caution-yellow': '#F59E0B',
-              'danger-red': '#EF4444',
-            },
-            keyframes: {
-               bounce: {
-                '0%, 100%': {
-                  transform: 'translateY(0) rotate(-1deg)',
-                },
-                '50%': {
-                  transform: 'translateY(-5px) rotate(1deg)',
-                },
-              },
-              'fade-in': {
-                '0%': { opacity: '0', transform: 'scale(0.98)' },
-                '100%': { opacity: '1', transform: 'scale(1)' },
-              }
-            },
-            animation: {
-              'bounce-slow': 'bounce 1.5s infinite ease-in-out',
-              'fade-in': 'fade-in 0.3s ease-out forwards',
-            }
-          },
-        },
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Towing Guide AI</title>
+  <style>
+    /* Basic reset and theme setup */
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    /* Simple keyframes for animations used in the app */
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounce-slow {
+      0%, 100% {
+        transform: translateY(-5%);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
       }
-    </script>
-    <style>
-      /* Keeping custom animation keyframes defined in style tag */
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
-    "@stripe/stripe-js": "https://aistudiocdn.com/@stripe/stripe-js@^4.4.0",
-    "@stripe/react-stripe-js": "https://aistudiocdn.com/@stripe/react-stripe-js@^3.0.0",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
-  }
-}
-</script>
+      50% {
+        transform: translateY(0);
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+      }
+    }
+    .animate-fade-in { animation: fade-in 0.5s ease-out; }
+    .animate-fade-in-up { animation: fade-in-up 0.5s ease-out; }
+    .animate-bounce-slow { animation: bounce-slow 2s infinite; }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Setup TailwindCSS dark mode and custom colors
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'brand-yellow': '#FBBF24',
+          }
+        }
+      }
+    }
+  </script>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
+      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+      "react/": "https://aistudiocdn.com/react@^19.2.0/",
+      "react": "https://aistudiocdn.com/react@^19.2.0",
+      "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+      "@stripe/stripe-js": "https://aistudiocdn.com/@stripe/stripe-js@^8.2.0",
+      "@stripe/react-stripe-js": "https://aistudiocdn.com/@stripe/react-stripe-js@^5.3.0"
+    }
+  }
+  </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>

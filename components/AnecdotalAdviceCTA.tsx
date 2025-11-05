@@ -3,9 +3,10 @@ import { SparkleIcon } from './icons';
 
 interface AnecdotalAdviceCTAProps {
   onUpgradeClick: () => void;
+  disabled?: boolean;
 }
 
-const AnecdotalAdviceCTA: React.FC<AnecdotalAdviceCTAProps> = ({ onUpgradeClick }) => {
+const AnecdotalAdviceCTA: React.FC<AnecdotalAdviceCTAProps> = ({ onUpgradeClick, disabled }) => {
   return (
     <div className="p-4 bg-gray-100 dark:bg-gray-900/50 rounded-lg text-center border-2 border-dashed border-gray-300 dark:border-gray-700 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-gray-100/50 dark:from-gray-900/50 to-transparent"></div>
@@ -19,7 +20,8 @@ const AnecdotalAdviceCTA: React.FC<AnecdotalAdviceCTAProps> = ({ onUpgradeClick 
             </p>
             <button 
                 onClick={onUpgradeClick} 
-                className="px-5 py-2 font-semibold text-sm text-gray-900 bg-brand-yellow rounded-md hover:bg-amber-400 transition-all"
+                disabled={disabled}
+                className="px-5 py-2 font-semibold text-sm text-gray-900 bg-brand-yellow rounded-md hover:bg-amber-400 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
                 Unlock with Pro
             </button>

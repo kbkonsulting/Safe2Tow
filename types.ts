@@ -46,7 +46,8 @@ export interface TowingInfo {
 }
 
 export interface VehicleIdentificationResult {
-  year: string;
-  make: string;
-  model: string;
+  year?: string;
+  make?: string;
+  model?: string;
+  error?: string;
 }

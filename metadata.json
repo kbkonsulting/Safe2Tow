@@ -1,6 +1,6 @@
 {
   "name": "Safe2Tow",
-  "description": "An expert AI co-pilot for tow operators. This app provides instant, professional-grade towing procedures by synthesizing manufacturer data with field-tested knowledge. It features distinct, expert-level logic for FWD, RWD, AWD/4WD, and modern EV/Hybrid drivetrains, ensuring safe and accurate guidance.",
+  "description": "Built by tow operators, for tow operators. Our expert AI co-pilot is trained by towing professionals to provide instant, professional-grade towing procedures by synthesizing manufacturer data with field-tested knowledge. It features distinct, expert-level logic for FWD, RWD, AWD/4WD, and modern EV/Hybrid drivetrains, ensuring safe and accurate guidance.",
   "requestFramePermissions": [
     "camera"
   ]

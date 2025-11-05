@@ -1,36 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+// Fix: Import User type from central auth service instead of firebase/auth
+import { User } from '../services/authService';
 import StripeCheckoutForm from './StripeCheckoutForm';
-import { SparkleIcon } from './icons';
 import { Theme } from '../App';
+import { isStripeConfigured, stripePublishableKey } from '../services/firebase';
 
-// --- IMPORTANT ---
-// Replace with your actual publishable key.
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51PbtqnRv08RNCoC6LdYg2yqX0m0jX2W2N3yV7X0z4K9l0m8X1e1w1j1m1k1h1g1f1e1d1c1b1a1Z00TgQv3s4d';
-const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
-
-const PLAN_PRICE_IN_CENTS = 1499; // $14.99
+// Architectural Fix: The Stripe promise is now initialized based on the centralized config flag.
+const stripePromise = isStripeConfigured ? loadStripe(stripePublishableKey) : null;
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPurchaseComplete: (details: { name: string; email: string; stripeCustomerId: string; }) => void;
+  onSuccess: (stripeCustomerId: string) => void;
+  user: User;
   theme: Theme;
 }
 
-const proFeatures = [
-    "VIN Search & Scan",
-    "'What the Guys Say' Insider Tips",
-    "Steering Lock Behavior Details",
-    "AWD/4WD Variant Analysis",
-    "Ad-Free Experience"
-];
-
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPurchaseComplete, theme }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onSuccess, user, theme }) => {
   if (!isOpen) return null;
 
   return (
@@ -42,7 +30,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPurchase
       aria-labelledby="payment-modal-title"
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700 relative"
+        className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-lg border border-gray-200 dark:border-gray-700 relative"
         onClick={e => e.stopPropagation()}
       >
         <button 
@@ -52,42 +40,36 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPurchase
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
-        
-        <h2 id="payment-modal-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Upgrade to Safe2Tow Pro</h2>
-        
-        <div className="bg-gray-100 dark:bg-gray-900/50 p-4 rounded-lg text-center my-6">
-            <div className="text-3xl font-bold text-brand-yellow">$14.99 / month</div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Cancel anytime.</p>
-        </div>
 
-        <div className="mb-6">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">Pro benefits include:</h3>
-            <ul className="space-y-2">
-                {proFeatures.map(feature => (
-                    <li key={feature} className="flex items-center gap-3 text-gray-800 dark:text-gray-200">
-                        <SparkleIcon className="w-5 h-5 text-brand-yellow flex-shrink-0"/>
-                        <span>{feature}</span>
-                    </li>
-                ))}
+        <h2 id="payment-modal-title" className="text-3xl font-bold text-gray-900 dark:text-white mb-2 text-center">Upgrade to Pro</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Unlock all features and get unlimited searches.</p>
+
+        <div className="mb-6 p-4 bg-white dark:bg-gray-700 rounded-md">
+            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">Pro Plan</h3>
+            <p className="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">$9.99 <span className="text-base font-normal text-gray-500 dark:text-gray-400">/ month</span></p>
+            <ul className="mt-4 space-y-2 text-gray-600 dark:text-gray-300 text-sm">
+                <li className="flex items-center gap-2">✓ Unlimited Searches</li>
+                <li className="flex items-center gap-2">✓ "What the Guys Say" Advice</li>
+                <li className="flex items-center gap-2">✓ VIN & Image Recognition</li>
+                <li className="flex items-center gap-2">✓ Remove Ads</li>
             </ul>
         </div>
-        
-        <Elements stripe={stripePromise}>
-            <StripeCheckoutForm 
-                onPurchaseComplete={onPurchaseComplete}
-                amountInCents={PLAN_PRICE_IN_CENTS}
-                customer={{ name, email }}
-                onCustomerChange={(field, value) => {
-                    if (field === 'name') setName(value);
-                    if (field === 'email') setEmail(value);
-                }}
+
+        {isStripeConfigured && stripePromise ? (
+          <Elements stripe={stripePromise}>
+              <StripeCheckoutForm 
+                onSuccess={onSuccess} 
+                onClose={onClose}
+                user={user}
                 theme={theme}
-            />
-        </Elements>
-        
-        <p className="text-xs text-gray-500 text-center mt-4">
-            Payments are securely processed by Stripe. By upgrading, you agree to our terms of service.
-        </p>
+              />
+          </Elements>
+        ) : (
+          <div className="text-center p-4 bg-red-100 dark:bg-red-900/50 rounded-md">
+            <p className="font-bold text-red-700 dark:text-red-200">Stripe Not Configured</p>
+            <p className="text-sm text-red-600 dark:text-red-300 mt-1">Stripe is not configured. Please set <strong>REACT_APP_STRIPE_PUBLISHABLE_KEY</strong> and <strong>REACT_APP_STRIPE_BACKEND_URL</strong> in your <strong>.env</strong> file. See the <strong>README.md</strong> for details.</p>
+          </div>
+        )}
       </div>
     </div>
   );

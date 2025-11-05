@@ -4,9 +4,10 @@ import { LockIcon } from './icons';
 interface MembershipCTAProps {
   onUpgradeClick: () => void;
   featureName: string;
+  disabled?: boolean;
 }
 
-const MembershipCTA: React.FC<MembershipCTAProps> = ({ onUpgradeClick, featureName }) => {
+const MembershipCTA: React.FC<MembershipCTAProps> = ({ onUpgradeClick, featureName, disabled }) => {
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-900/50 rounded-lg text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
       <div className="flex justify-center mb-3">
@@ -18,7 +19,8 @@ const MembershipCTA: React.FC<MembershipCTAProps> = ({ onUpgradeClick, featureNa
       </p>
       <button 
         onClick={onUpgradeClick} 
-        className="px-6 py-2.5 font-semibold text-gray-900 bg-brand-yellow rounded-md hover:bg-amber-400 transition-all"
+        disabled={disabled}
+        className="px-6 py-2.5 font-semibold text-gray-900 bg-brand-yellow rounded-md hover:bg-amber-400 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         Upgrade to Pro
       </button>

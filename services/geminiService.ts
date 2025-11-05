@@ -1,10 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TowingInfo, VehicleIdentificationResult } from '../types';
 
+// Centralized model name for consistency and easy updates.
+const TEXT_MODEL = 'gemini-2.5-flash';
+
 // Gemini API initialization
-// Fix: Use the correct model name 'gemini-2.5-flash' for basic text tasks.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const model = 'gemini-2.5-flash';
 
 const towingInfoSchema = {
   type: Type.OBJECT,
@@ -85,7 +86,7 @@ const towingInfoSchema = {
   ],
 };
 
-const getSystemInstruction = () => `You are an expert automotive technician and towing specialist. Your task is to provide detailed, accurate, and safe towing information for vehicles. Use the provided JSON schema to structure your response.
+const getSystemInstruction = () => `You are an expert automotive technician and towing specialist, with knowledge curated by professional tow operators, for professional tow operators. Your task is to provide detailed, accurate, and safe towing information for vehicles. Use the provided JSON schema to structure your response.
 - Prioritize safety above all else. If unsure, recommend the safest option (dollies or flatbed).
 - For AWD/4WD vehicles, always detail the specific system (e.g., "Full-time AWD with viscous coupling", "Part-time 4WD with manual transfer case") and explain its implications for towing.
 - 'isDrivetrainEngagedWhenOff' refers to whether the wheels are mechanically connected to the transmission/drivetrain when the vehicle is off. For example, some automatic transmissions with electronic shifters may not fully disengage in 'Neutral' without power.
@@ -100,7 +101,7 @@ const getSystemInstruction = () => `You are an expert automotive technician and 
 export const getTowingInfo = async (query: string): Promise<TowingInfo> => {
   try {
     const response = await ai.models.generateContent({
-      model,
+      model: TEXT_MODEL,
       contents: `Get towing information for: ${query}`,
       config: {
         responseMimeType: 'application/json',
@@ -109,7 +110,6 @@ export const getTowingInfo = async (query: string): Promise<TowingInfo> => {
       },
     });
 
-    // Fix: Use response.text to get the generated content.
     const text = response.text.trim();
     if (!text) {
       throw new Error("Received an empty response from the AI.");
@@ -125,7 +125,7 @@ export const getTowingInfo = async (query: string): Promise<TowingInfo> => {
 export const getVehicleOptions = async (query: string): Promise<string[]> => {
     try {
         const response = await ai.models.generateContent({
-            model,
+            model: TEXT_MODEL,
             contents: `List vehicle ${query}. Only return a JSON array of strings, like ["Option 1", "Option 2"]. Do not add any other text. If there are no options, return an empty array.`,
             config: {
                 responseMimeType: 'application/json',
@@ -135,7 +135,6 @@ export const getVehicleOptions = async (query: string): Promise<string[]> => {
                 }
             }
         });
-        // Fix: Use response.text to get the generated content.
         const text = response.text.trim();
         return JSON.parse(text);
     } catch (error) {
@@ -147,10 +146,9 @@ export const getVehicleOptions = async (query: string): Promise<string[]> => {
 export const getCorrectedMake = async (make: string): Promise<string> => {
     try {
         const response = await ai.models.generateContent({
-            model,
+            model: TEXT_MODEL,
             contents: `Correct this vehicle make, returning only the corrected name: "${make}". For example, if the input is "Chevy", return "Chevrolet". If it's already correct, return it as is.`,
         });
-        // Fix: Use response.text to get the generated content.
         return response.text.trim();
     } catch (error) {
         console.error(`Error correcting make "${make}":`, error);
@@ -166,12 +164,12 @@ export const identifyVehicleFromImage = async (base64Image: string): Promise<Veh
         },
     };
     const textPart = {
-        text: 'Identify the year, make, and model of the vehicle in this image. Respond ONLY with a JSON object in the format {"year": "YYYY", "make": "Make", "model": "Model"}.',
+        text: 'Identify the year, make, and model of the vehicle in this image. Respond ONLY with a JSON object. If a vehicle is clearly visible, use the format {"year": "YYYY", "make": "Make", "model": "Model"}. If no vehicle is clearly visible, use the format {"error": "No vehicle detected in the image."}.',
     };
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: TEXT_MODEL,
             contents: { parts: [imagePart, textPart] },
             config: {
                 responseMimeType: 'application/json',
@@ -181,18 +179,25 @@ export const identifyVehicleFromImage = async (base64Image: string): Promise<Veh
                         year: { type: Type.STRING },
                         make: { type: Type.STRING },
                         model: { type: Type.STRING },
+                        error: { type: Type.STRING },
                     },
-                    required: ['year', 'make', 'model'],
+                    // No 'required' array, as one of two distinct structures is expected.
                 }
             }
         });
 
-        // Fix: Use response.text to get the generated content.
         const text = response.text.trim();
-        return JSON.parse(text) as VehicleIdentificationResult;
+        const result = JSON.parse(text) as VehicleIdentificationResult;
+
+        if (result.error || (result.year && result.make && result.model)) {
+          return result;
+        }
+        
+        throw new Error("AI returned an unexpected format for vehicle identification.");
+
     } catch (error) {
         console.error("Error identifying vehicle from image:", error);
-        throw new Error("Failed to identify vehicle from image.");
+        throw new Error("Failed to identify vehicle. The AI may be experiencing issues or the image is unclear.");
     }
 };
 
@@ -210,13 +215,12 @@ export const extractVinFromImage = async (base64Image: string): Promise<string> 
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: TEXT_MODEL,
             contents: { parts: [imagePart, textPart] },
         });
 
-        // The response should be just the VIN. Let's clean it up just in case.
-        // Fix: Use response.text to get the generated content.
-        return response.text.trim().replace(/[^A-HJ-NPR-Z0-9]/gi, '').substring(0, 17);
+        const vin = response.text.trim().toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
+        return vin.substring(0, 17);
     } catch (error) {
         console.error("Error extracting VIN from image:", error);
         throw new Error("Failed to extract VIN from image.");

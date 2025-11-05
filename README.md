@@ -1,128 +1,232 @@
-# Safe2Tow - AI-Powered Towing Guide
+# Safe2Tow: AI Towing Guide
 
-Safe2Tow is an expert AI co-pilot for tow operators. This app provides instant, professional-grade towing procedures by synthesizing manufacturer data with field-tested knowledge. It features distinct, expert-level logic for FWD, RWD, AWD/4WD, and modern EV/Hybrid drivetrains, ensuring safe and accurate guidance.
+Built by tow operators for tow operators, Safe2Tow is an expert AI co-pilot trained by towing professionals. This app provides instant, professional-grade towing procedures by synthesizing manufacturer data with field-tested knowledge, ensuring safe and accurate guidance for any vehicle.
 
-## Features
+This project is architected to be resilient and developer-friendly, featuring graceful degradation that allows the UI to function even without full backend configuration.
 
-- **AI-Powered Search**: Get vehicle-specific towing procedures by searching with vehicle details or VIN.
-- **Image Recognition**: Use your device's camera to identify a vehicle or scan a VIN (Pro feature).
-- **Detailed Procedures**: Clear instructions for front-towing, rear-towing, and special cases.
-- **Drivetrain Analysis**: In-depth information about AWD systems, whether the drivetrain is engaged when off, and if the steering locks.
-- **Pro Membership**: Unlock advanced features like VIN search, anecdotal "what the guys say" advice, and an ad-free experience.
-- **Stripe Integration**: Secure payment processing for Pro membership upgrades.
-- **Firestore Backend**: Persists user data, search logs, and feedback for analytics and future outreach using Google Cloud Firestore.
-- **Light/Dark Mode**: A theme toggle for user preference.
+## Key Features
+
+- **AI-Powered Search**: Get detailed towing procedures by searching Year/Make/Model or VIN.
+- **Image Recognition (Pro)**: Identify vehicles and extract VINs by snapping a photo.
+- **Drivetrain-Specific Logic**: Expert guidance for FWD, RWD, AWD/4WD, and modern EV/Hybrid systems.
+- **"What the Guys Say" (Pro)**: Access a knowledge base of anecdotal, field-tested advice from veteran operators.
+- **Pro Membership**: Unlock advanced features via Stripe integration.
+- **Firebase Integration**: Secure user authentication (Email/Password) and data storage with Firestore.
+- **Resilient & Responsive Design**: A clean, accessible UI with light/dark modes that functions gracefully even if backend services are not configured.
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript, Tailwind CSS
-- **AI**: Google Gemini API (`gemini-2.5-flash`)
-- **Payments**: Stripe
-- **Database**: Google Cloud Firestore
+| Category      | Technology                                    | Purpose                                                 |
+|---------------|-----------------------------------------------|---------------------------------------------------------|
+| **Frontend**  | React, TypeScript, Tailwind CSS               | For a modern, type-safe, and rapidly-styled UI.         |
+| **AI**        | Google Gemini API (`gemini-2.5-flash`)        | Core intelligence for vehicle and towing analysis.      |
+| **Backend**   | Firebase (Authentication & Firestore)         | Secure user management and data storage.                |
+| **Payments**  | Stripe                                        | Securely handling Pro membership subscriptions.         |
+| **Architecture**| Graceful Degradation                          | Ensures app remains usable during development/setup.    |
 
 ---
 
-## Getting Started & Configuration
+## Key Architectural Concepts
 
-This project uses an `index.html` with an import map for dependencies, so no local installation or build step is required to run it. However, you must configure several services for the app to be fully functional.
+### Graceful Degradation & Limited Mode
 
-### 1. Google Gemini API Key
+This application is designed to be resilient. If the necessary environment variables for Firebase or Stripe are not provided, **the app will not crash**. Instead, it enters a "Limited Mode":
+- A persistent warning banner is displayed at the top, informing the developer which services are not configured.
+- UI elements that depend on the missing services (e.g., "Sign In", "Upgrade to Pro", payment forms) are disabled.
+- This allows for focused development on UI components or AI features without requiring a full backend and payment setup, significantly improving the developer experience.
 
-The application uses the Google Gemini API to generate towing information.
+---
 
-- The API key is accessed via `process.env.API_KEY`.
-- You must have this environment variable configured in your hosting environment for the AI features to work.
+## Getting Started
 
-### 2. Stripe Payments Setup
+Follow these instructions to set up and run the project locally.
 
-To process real payments, you need a Stripe account and a simple backend server to handle secure API calls.
+### Setup Checklist
 
-- **Get your keys**: Sign up for Stripe and find your **Publishable Key** and **Secret Key** in the developer dashboard.
-- **Update the frontend**: Open `components/PaymentModal.tsx` and replace the placeholder `STRIPE_PUBLISHABLE_KEY` with your actual publishable key.
-- **Create a backend server**: The frontend is configured to talk to a backend server running on `http://localhost:4242`. Below is a minimal Node.js server to handle payment intent creation. Save this in a `backend` directory, run `npm install express stripe cors`, and then `node server.js`.
+1.  [ ] Clone the repository and install dependencies.
+2.  [ ] Create a Firebase project and enable Authentication & Firestore.
+3.  [ ] Create a Stripe account to get API keys.
+4.  [ ] Set up a simple Node.js backend for Stripe payments.
+5.  [ ] Create and populate the `.env` file with your keys.
+6.  [ ] Run the Stripe backend server.
+7.  [ ] Run the React frontend application.
 
-**Example `backend/server.js`:**
-```javascript
-const express = require('express');
-const Stripe = require('stripe');
-const cors = require('cors');
+### 1. Installation
 
-// IMPORTANT: Replace with your REAL Stripe Secret Key.
-// In production, load this from an environment variable.
-const stripe = Stripe('sk_test_YOUR_SECRET_KEY_HERE');
+Clone the repository and install the dependencies:
 
-const app = express();
-
-// Use CORS to allow requests from your frontend
-app.use(cors({ origin: '*' })); 
-app.use(express.json());
-
-app.post('/api/create-payment-intent', async (req, res) => {
-  const { amount, name, email } = req.body;
-
-  if (!amount || amount <= 0 || !email) {
-    return res.status(400).send({ error: 'Invalid amount or missing email' });
-  }
-
-  try {
-    // Find or create a customer in Stripe
-    let customer = await stripe.customers.list({ email: email, limit: 1 });
-    let customerId;
-
-    if (customer.data.length > 0) {
-      customerId = customer.data[0].id;
-    } else {
-      const newCustomer = await stripe.customers.create({ name, email });
-      customerId = newCustomer.id;
-    }
-
-    // Create a PaymentIntent with the amount and customer
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: 'usd',
-      customer: customerId,
-      automatic_payment_methods: { enabled: true },
-      // Return the Stripe Customer ID in the response metadata
-      metadata: { customer_id: customerId }
-    });
-
-    // Send the client secret and customer ID back to the frontend
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-      stripeCustomerId: customerId,
-    });
-  } catch (error) {
-    console.error("Stripe Error:", error.message);
-    res.status(500).send({ error: error.message });
-  }
-});
-
-const PORT = 4242;
-app.listen(PORT, () => console.log(`Node server listening on http://localhost:${PORT}`));
-
+```bash
+git clone <repository-url>
+cd <project-directory>
+npm install
 ```
 
-### 3. Google Cloud Firestore Setup
+### 2. Environment Variables
 
-The application uses Firestore to store user data, search logs, and feedback.
+Create a `.env` file in the project root. This file is used to store sensitive keys and configuration settings. Copy the template below into your new `.env` file.
 
-- **Create a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/), click "Add project", and follow the setup steps.
-- **Create a Web App**: In your new project's dashboard, click the Web icon (`</>`) to create a new web application. Give it a nickname and click "Register app".
-- **Get Config Credentials**: After registering, Firebase will show you a configuration object. Copy these credentials.
-- **Connect the App**: Open `services/firebase.ts` and paste your copied configuration object into the `firebaseConfig` constant, replacing the placeholder values.
-- **Enable Firestore**: In the Firebase Console, go to the "Firestore Database" section and click "Create database". Start in **production mode** and choose a location.
-- **Set Security Rules**: After the database is created, go to the **Rules** tab. Replace the default rules with the following to allow public access for this demo. **WARNING**: For a real production application, you must implement more secure rules.
+**`.env` file template:**
+```
+# Your Stripe publishable key (e.g., pk_test_xxxxxxxx)
+REACT_APP_STRIPE_PUBLISHABLE_KEY=
+
+# URL for your Stripe backend server (see Step 4)
+REACT_APP_STRIPE_BACKEND_URL=http://localhost:4242/api/create-payment-intent
+
+# Your web app's Firebase configuration (see Step 3)
+REACT_APP_FIREBASE_API_KEY=
+REACT_APP_FIREBASE_AUTH_DOMAIN=
+REACT_APP_FIREBASE_PROJECT_ID=
+REACT_APP_FIREBASE_STORAGE_BUCKET=
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=
+REACT_APP_FIREBASE_APP_ID=
+REACT_APP_FIREBASE_MEASUREMENT_ID=
+```
+> **Note on Gemini API Key:** The Gemini API key is provided via `process.env.API_KEY`. This is typically configured directly in the deployment environment (like Google AI Studio's development environment) and **does not need to be added to the `.env` file**.
+
+### 3. Firebase Project Setup
+
+1.  Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
+2.  In **Project Settings**, create a new web app (`</>`) to get your `firebaseConfig` object.
+3.  Use these values to populate the `REACT_APP_FIREBASE_*` variables in your `.env` file.
+4.  **Enable Authentication**: In the Firebase Console, go to **Build** > **Authentication** > **Sign-in method** and enable the **Email/Password** provider.
+5.  **Set Up Firestore**: Go to **Build** > **Firestore Database**. Create a new database in **Production mode**.
+6.  **Update Security Rules**: Go to the **Rules** tab in Firestore and replace the default rules with the following to secure user data and allow app functionality:
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read and write to all collections.
-    // Lock this down with authentication in a real app.
-    match /{document=**} {
-      allow read, write: if true;
+    match /users/{userId} {
+      // Allow a logged-in user to create, read, and update their own document.
+      allow create, read, update: if request.auth != null && request.auth.uid == userId;
+    }
+    match /searches/{searchId} {
+      allow create; // Allow any user (signed in or not) to log searches
+      allow read: if false; // Disallow reading search logs
+    }
+    match /feedback/{feedbackId} {
+      allow create; // Allow any user (signed in or not) to submit feedback
+      allow read: if false; // Disallow reading feedback
     }
   }
 }
 ```
-Your application is now configured to use Firestore as its database. The collections (`users`, `searches`, `feedback`) will be created automatically when the first document is written to them.
+
+### 4. Stripe Payments Backend Setup
+
+Stripe requires a secure backend to create a `PaymentIntent` and prevent fraud. An example Node.js/Express server is provided in this guide.
+
+1.  Sign up for a [Stripe Account](https://dashboard.stripe.com/register) and get your **Publishable Key** and **Secret Key** from the developer dashboard.
+2.  Set the `REACT_APP_STRIPE_PUBLISHABLE_KEY` in your `.env` file with your **Publishable Key**.
+3.  Create a new directory named `backend` in your project root. Inside `backend`, create a `server.js` file and a `package.json` file.
+    - **`backend/package.json`**:
+      ```json
+      {
+        "name": "safe2tow-backend",
+        "version": "1.0.0",
+        "main": "server.js",
+        "scripts": { "start": "node server.js" },
+        "dependencies": { "cors": "^2.8.5", "express": "^4.19.2", "stripe": "^15.12.0" }
+      }
+      ```
+    - **`backend/server.js`**:
+      ```javascript
+      const express = require('express');
+      const Stripe = require('stripe');
+      const cors = require('cors');
+
+      // IMPORTANT: Use your Stripe Secret Key. Load from environment variables for security.
+      const stripe = Stripe(process.env.STRIPE_SECRET_KEY); 
+
+      const app = express();
+      // In production, restrict origin to your app's domain
+      app.use(cors());
+      app.use(express.json());
+
+      app.post('/api/create-payment-intent', async (req, res) => {
+        const { name, email } = req.body;
+        try {
+          let customer = (await stripe.customers.list({ email: email, limit: 1 })).data[0];
+          if (!customer) {
+            customer = await stripe.customers.create({ name, email });
+          }
+
+          const paymentIntent = await stripe.paymentIntents.create({
+            customer: customer.id,
+            amount: 999, // $9.99 in cents
+            currency: 'usd',
+            automatic_payment_methods: { enabled: true },
+          });
+          res.send({ clientSecret: paymentIntent.client_secret, stripeCustomerId: customer.id });
+        } catch (error) {
+          res.status(500).send({ error: error.message });
+        }
+      });
+
+      const PORT = 4242;
+      app.listen(PORT, () => console.log(`Node server listening on http://localhost:${PORT}`));
+      ```
+4.  Install backend dependencies:
+    ```bash
+    cd backend
+    npm install
+    cd ..
+    ```
+
+### 5. Running the Project
+
+You need to run two processes in separate terminal windows: the backend server and the frontend app.
+
+1.  **Start the Backend Server**:
+    ```bash
+    # Make sure you are in the 'backend' directory
+    cd backend
+    # Set your Stripe Secret Key and run the server
+    STRIPE_SECRET_KEY=your_stripe_secret_key_here npm start
+    ```
+
+2.  **Start the Frontend Application** (in a new terminal):
+    ```bash
+    # Make sure you are in the project's root directory
+    npm start
+    ```
+
+The application should now be running on `http://localhost:3000`.
+
+---
+
+## Project Structure
+
+```
+/
+├── components/          # Reusable React components for UI elements.
+│   ├── Accordion.tsx      # A collapsible content panel.
+│   ├── AuthModal.tsx      # User sign-in/sign-up form.
+│   ├── PaymentModal.tsx   # Stripe payment processing modal.
+│   ├── ResultCard.tsx     # Displays the final towing information.
+│   ├── SearchBar.tsx      # The main user input for vehicle search.
+│   └── ...
+├── services/            # Logic for communicating with external APIs and services.
+│   ├── authService.ts     # Handles Firebase Authentication (sign-up, sign-in, etc.).
+│   ├── databaseService.ts # Manages Firestore database interactions (user profiles, logs).
+│   ├── firebase.ts        # Initializes the Firebase app and centralizes configuration.
+│   ├── geminiService.ts   # Client for making calls to the Google Gemini API.
+│   └── stripeService.ts   # Helper to call the Stripe backend for payment intents.
+├── App.tsx              # Main application component, manages state and modals.
+├── index.tsx            # React application entry point.
+├── types.ts             # Core TypeScript type definitions used across the app.
+└── README.md            # This file.
+```
+
+---
+
+## Legal Disclaimer
+
+> **IMPORTANT:** This application includes template legal documents (`TermsOfServiceModal.tsx` and `PrivacyPolicyModal.tsx`). These are provided for demonstration purposes only and are **NOT legal advice**.
+>
+> Before deploying this application in a production environment, you **must**:
+> 1.  **Consult with a qualified lawyer** to draft your Terms of Service, Privacy Policy, and any other necessary legal disclaimers.
+> 2.  Tailor these documents to your specific business operations, data handling practices, and legal jurisdiction.
+>
+> Failure to obtain proper legal counsel can expose you and your business to significant liability.
