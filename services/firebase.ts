@@ -15,13 +15,13 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// --- Diagnostic Logging ---
-console.log("Attempting to initialize Firebase with projectId:", firebaseConfig.projectId);
-
+export const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '';
+export const stripeBackendUrl = process.env.REACT_APP_STRIPE_BACKEND_URL || '';
 
 // --- Exported Configuration Status ---
 
 export const isFirebaseConfigured = !Object.values(firebaseConfig).some(value => !value);
+export const isStripeConfigured = stripePublishableKey.startsWith('pk_') && !!stripeBackendUrl;
 
 // --- Service Initialization ---
 
@@ -30,12 +30,7 @@ let db: firebase.firestore.Firestore | null = null;
 
 if (isFirebaseConfigured) {
   if (!firebase.apps.length) {
-    try {
-      firebase.initializeApp(firebaseConfig);
-      console.log("Firebase initialized successfully.");
-    } catch (error) {
-      console.error("Error initializing Firebase:", error);
-    }
+    firebase.initializeApp(firebaseConfig);
   }
   auth = firebase.auth();
   db = firebase.firestore();
@@ -46,5 +41,14 @@ if (isFirebaseConfigured) {
       "Authentication and database features will be disabled."
     );
 }
+
+if (!isStripeConfigured) {
+    console.warn(
+      "Stripe configuration is incomplete. Please ensure REACT_APP_STRIPE_PUBLISHABLE_KEY and REACT_APP_STRIPE_BACKEND_URL " +
+      "are set in your .env file. Refer to the README.md for instructions. " +
+      "Payment features will be disabled."
+    );
+}
+
 
 export { auth, db };

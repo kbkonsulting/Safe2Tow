@@ -43,6 +43,7 @@ export interface TowingInfo {
   cautions: string[];
   anecdotalAdvice?: string[];
   awdVariantInfo?: AWDVariantInfo;
+  unlockAdvice?: string[];
 }
 
 export interface VehicleIdentificationResult {

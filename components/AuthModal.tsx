@@ -1,58 +1,47 @@
 import React, { useState } from 'react';
-import { signInWithEmail, signUpWithEmail, User } from '../services/authService';
-import { createUserIfNotExist } from '../services/databaseService';
+import { signInWithEmail, signUpWithEmail, signInAsProTester } from '../services/authService';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
+  onProTesterLoginSuccess: () => Promise<void>;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, onOpenTerms, onOpenPrivacy }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenTerms, onOpenPrivacy, onProTesterLoginSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [hasAgreed, setHasAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Bug Fix: Use separate loading states for each button to prevent shared state issues.
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isTesterLoading, setIsTesterLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleAuthSuccess = async (user: User) => {
-    // This is the critical fix: ensure the user document exists before closing the modal.
-    await createUserIfNotExist(user.uid, user.email, user.displayName);
-    onSuccess();
-    onClose();
-  };
-
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp && !hasAgreed) {
-      setError("You must agree to the terms and privacy policy to sign up.");
+    if (!hasAgreed) {
+      setError("You must agree to the terms and privacy policy.");
       return;
     }
     
-    setIsLoading(true);
+    setIsAuthLoading(true);
     setError(null);
 
     try {
-      let user: User | null = null;
       if (isSignUp) {
-        user = await signUpWithEmail(name, email, password);
+        await signUpWithEmail(name, email, password);
       } else {
-        user = await signInWithEmail(email, password);
+        await signInWithEmail(email, password);
       }
-      
-      if (user) {
-        await handleAuthSuccess(user);
-      } else {
-        setError("Could not complete the action. Please try again.");
-      }
-
+      onClose();
     } catch (err) {
+      // Fix: Use property checking for Firebase v8 error objects instead of `instanceof FirebaseError`
       const firebaseError = err as { code?: string; message: string };
       if (firebaseError.code) {
         switch (firebaseError.code) {
@@ -78,9 +67,29 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, onOpe
       }
       console.error(err);
     } finally {
-      setIsLoading(false);
+      setIsAuthLoading(false);
     }
   };
+
+  const handleProTesterSignIn = async () => {
+    if (!hasAgreed) {
+      setError("You must agree to the terms and privacy policy.");
+      return;
+    }
+    setIsTesterLoading(true);
+    setError(null);
+    try {
+      await signInAsProTester();
+      await onProTesterLoginSuccess();
+      onClose();
+    } catch (err) {
+      setError("Failed to sign in as Pro Tester. See console for details.");
+      console.error(err);
+    } finally {
+      setIsTesterLoading(false);
+    }
+  };
+
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
@@ -150,42 +159,69 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, onOpe
             required
             className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-yellow text-gray-900 dark:text-gray-200"
           />
-
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           
           <div className="pt-2">
+            {/* UI Fix: Add loading spinner and text for both sign-in and sign-up states */}
             <button 
               type="submit"
-              disabled={isLoading || (isSignUp && !hasAgreed)}
+              disabled={isAuthLoading || isTesterLoading || !hasAgreed}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 font-semibold text-gray-900 bg-brand-yellow rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {isAuthLoading && (
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-              ) : (isSignUp ? 'Create Account' : 'Sign In')}
+              )}
+              {isAuthLoading ? (isSignUp ? 'Creating Account...' : 'Signing In...') : (isSignUp ? 'Create Account' : 'Sign In')}
             </button>
           </div>
         </form>
-        
-        {isSignUp && (
-          <div className="flex items-start space-x-2 mt-4">
-            <input 
-              type="checkbox" 
-              id="terms-agree" 
-              checked={hasAgreed} 
-              onChange={(e) => setHasAgreed(e.target.checked)} 
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-yellow focus:ring-brand-yellow"
-            />
-            <label htmlFor="terms-agree" className="text-xs text-gray-500 dark:text-gray-400">
-              By continuing, you agree to the 
-              <button onClick={(e) => handleLinkClick(e, onOpenTerms)} className="underline hover:text-brand-yellow mx-1">Terms of Service</button> 
-              and 
-              <button onClick={(e) => handleLinkClick(e, onOpenPrivacy)} className="underline hover:text-brand-yellow ml-1">Privacy Policy</button>.
-            </label>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
           </div>
-        )}
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">
+              For Testing
+            </span>
+          </div>
+        </div>
+        
+        {/* UI Fix: Add loading spinner and text for the pro tester button */}
+        <button
+          type="button"
+          onClick={handleProTesterSignIn}
+          disabled={isAuthLoading || isTesterLoading || !hasAgreed}
+          className="w-full flex items-center justify-center gap-3 px-4 py-2 font-semibold text-gray-800 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isTesterLoading && (
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
+          {isTesterLoading ? 'Signing In...' : 'Sign In as Pro Tester'}
+        </button>
+        
+        {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}
+
+        <div className="flex items-start space-x-2 mt-4">
+          <input 
+            type="checkbox" 
+            id="terms-agree" 
+            checked={hasAgreed} 
+            onChange={(e) => setHasAgreed(e.target.checked)} 
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-yellow focus:ring-brand-yellow"
+          />
+          <label htmlFor="terms-agree" className="text-xs text-gray-500 dark:text-gray-400">
+            By continuing, you agree to the 
+            <button onClick={(e) => handleLinkClick(e, onOpenTerms)} className="underline hover:text-brand-yellow mx-1">Terms of Service</button> 
+            and 
+            <button onClick={(e) => handleLinkClick(e, onOpenPrivacy)} className="underline hover:text-brand-yellow ml-1">Privacy Policy</button>.
+          </label>
+        </div>
 
         <div className="text-center mt-6">
             <button onClick={toggleForm} className="text-sm text-brand-yellow hover:underline">

@@ -32,40 +32,22 @@ interface Feedback {
   createdAt: any;
 }
 
-const checkDb = () => {
-  if (!db) {
-    console.error("Database service is not configured.");
-    throw new Error("Database service is not configured.");
-  }
-  return db;
-}
-
 /**
  * Creates a new user document in Firestore if one doesn't already exist.
  * This is typically called after a user signs up for the first time.
  */
 export const createUserIfNotExist = async (uid: string, email: string | null, name: string | null): Promise<void> => {
-  console.log(`Attempting to create user document for uid: ${uid}`);
-  const db = checkDb();
+  if (!db) throw new Error("Database service is not configured.");
   const userRef = db.collection('users').doc(uid);
-  try {
-    const userSnap = await userRef.get();
-    if (!userSnap.exists) {
-      console.log(`User document for ${uid} does not exist. Creating...`);
-      await userRef.set({
-        uid,
-        email,
-        name,
-        is_pro_member: false,
-        created_at: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      console.log(`User document for ${uid} created successfully.`);
-    } else {
-      console.log(`User document for ${uid} already exists.`);
-    }
-  } catch (error) {
-    console.error(`Error in createUserIfNotExist for uid ${uid}:`, error);
-    throw error; // Re-throw to be caught by the calling function
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    await userRef.set({
+      uid,
+      email,
+      name,
+      is_pro_member: false,
+      created_at: firebase.firestore.FieldValue.serverTimestamp(),
+    });
   }
 };
 
@@ -73,29 +55,17 @@ export const createUserIfNotExist = async (uid: string, email: string | null, na
  * Fetches a user's profile from Firestore.
  */
 export const getUser = async (uid: string): Promise<UserProfile | null> => {
-  console.log(`Attempting to get user document for uid: ${uid}`);
-  const db = checkDb();
+  if (!db) return null;
   const userRef = db.collection('users').doc(uid);
-  try {
-    const userSnap = await userRef.get();
-    if (userSnap.exists) {
-      console.log(`User document for ${uid} found.`);
-      return userSnap.data() as UserProfile;
-    } else {
-      console.log(`User document for ${uid} not found.`);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Error in getUser for uid ${uid}:`, error);
-    return null;
-  }
+  const userSnap = await userRef.get();
+  return userSnap.exists ? (userSnap.data() as UserProfile) : null;
 };
 
 /**
  * Upgrades a user to Pro status and saves their Stripe Customer ID.
  */
 export const upgradeUserToPro = async (uid: string, stripeCustomerId: string): Promise<void> => {
-  const db = checkDb();
+  if (!db) throw new Error("Database service is not configured.");
   const userRef = db.collection('users').doc(uid);
   await userRef.update({
     is_pro_member: true,
@@ -107,8 +77,11 @@ export const upgradeUserToPro = async (uid: string, stripeCustomerId: string): P
  * Logs a search query and its result to the 'searches' collection.
  */
 export const logSearch = async (logData: Omit<SearchLog, 'createdAt'>): Promise<void> => {
+  if (!db) {
+    console.warn("Firestore not configured, skipping search log.");
+    return; // This is a non-critical operation, so we fail silently.
+  }
   try {
-    const db = checkDb();
     await db.collection('searches').add({
       ...logData,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -123,7 +96,7 @@ export const logSearch = async (logData: Omit<SearchLog, 'createdAt'>): Promise<
  * Submits user feedback to the 'feedback' collection.
  */
 export const submitFeedback = async (feedbackData: Omit<Feedback, 'createdAt'>): Promise<void> => {
-  const db = checkDb();
+  if (!db) throw new Error("Database service is not configured.");
   try {
     await db.collection('feedback').add({
       ...feedbackData,
@@ -139,7 +112,7 @@ export const submitFeedback = async (feedbackData: Omit<Feedback, 'createdAt'>):
  * A development-only function to manually toggle a user's pro status.
  */
 export const setProStatus = async (uid: string, isPro: boolean): Promise<void> => {
-  const db = checkDb();
+  if (!db) throw new Error("Database service is not configured.");
   console.log(`DEV: Setting user ${uid} pro status to ${isPro}`);
   const userRef = db.collection('users').doc(uid);
   await userRef.update({

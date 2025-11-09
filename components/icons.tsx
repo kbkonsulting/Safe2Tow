@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 type IconProps = {
@@ -129,5 +130,34 @@ export const MoonIcon: React.FC<IconProps> = ({ className }) => (
 export const ChevronDownIcon: React.FC<IconProps> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="6 9 12 15 18 9" />
+    </svg>
+);
+
+export const CogIcon: React.FC<IconProps> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/>
+    <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+    <path d="M12 2v2m0 18v-2m-6.36-2.64L7.05 16m9.9-9.9-1.41-1.41M2 12h2m18 0h-2m-2.64-6.36L16 7.05m-9.9 9.9 1.41 1.41"/>
+  </svg>
+);
+
+export const FeedbackIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+);
+
+export const LicensePlateIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
+        <path d="M6 12h4m4 0h4"></path>
+    </svg>
+);
+
+export const AdFreeIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m15 9-6 6" />
+        <path d="m9 9 6 6" />
     </svg>
 );

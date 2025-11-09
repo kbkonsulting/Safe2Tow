@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Towing Guide AI</title>
-  <link rel="stylesheet" href="/output.css">
+  <title>Safe2Tow</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#FBBF24">
+  <link rel="apple-touch-icon" href="/icon.svg">
   <style>
     /* Basic reset and theme setup */
     body {
@@ -36,24 +38,51 @@
     .animate-fade-in-up { animation: fade-in-up 0.5s ease-out; }
     .animate-bounce-slow { animation: bounce-slow 2s infinite; }
   </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Setup TailwindCSS dark mode and custom colors
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'brand-yellow': '#FBBF24',
+          }
+        }
+      }
+    }
+  </script>
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
   
   <script type="importmap">
-  {
-    "imports": {
-      "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
-      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-      "react/": "https://aistudiocdn.com/react@^19.2.0/",
-      "react": "https://aistudiocdn.com/react@^19.2.0",
-      "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
-      "@stripe/stripe-js": "https://aistudiocdn.com/@stripe/stripe-js@^8.2.0",
-      "@stripe/react-stripe-js": "https://aistudiocdn.com/@stripe/react-stripe-js@^5.3.0"
-    }
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
+    "@stripe/stripe-js": "https://aistudiocdn.com/@stripe/stripe-js@^8.3.0",
+    "@stripe/react-stripe-js": "https://aistudiocdn.com/@stripe/react-stripe-js@^5.3.0"
   }
-  </script>
+}
+</script>
   <script type="module" src="/index.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

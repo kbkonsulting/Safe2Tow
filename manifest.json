@@ -1,0 +1,16 @@
+{
+  "name": "Safe2Tow",
+  "short_name": "Safe2Tow",
+  "description": "Built by tow operators, for tow operators. Our expert AI co-pilot is trained by towing professionals to provide instant, professional-grade towing procedures by synthesizing manufacturer data with field-tested knowledge.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#FBBF24",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

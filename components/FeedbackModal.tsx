@@ -4,7 +4,7 @@ import { TowingInfo } from '../types';
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (feedbackText: string) => void;
+  onSubmit: (feedbackText: string) => Promise<void>;
   towingInfo: TowingInfo | null;
 }
 
